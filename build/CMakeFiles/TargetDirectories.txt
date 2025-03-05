@@ -1,0 +1,4 @@
+/home/zbw/SimpleWebServer/build/CMakeFiles/rebuild_cache.dir
+/home/zbw/SimpleWebServer/build/CMakeFiles/edit_cache.dir
+/home/zbw/SimpleWebServer/build/CMakeFiles/test_threadpool.dir
+/home/zbw/SimpleWebServer/build/CMakeFiles/server.dir
