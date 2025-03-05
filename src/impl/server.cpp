@@ -9,12 +9,11 @@
 #include "socket.h"
 #include "http.h"
 #include "router.h"
+#include "lru_k_cache.h"
 
 
 // 构造函数：初始化端口，设置监听套接字和 epoll 文件描述符的初始值
-Server::Server(int port,int thread_count) : port(port),socka(port), listen_fd(-1), epoll_fd(-1), thread_pool(thread_count) {
-
- }
+Server::Server(int port,int thread_count) : port(port),socka(port), listen_fd(-1), epoll_fd(-1), thread_pool(thread_count) {}
 
 // 析构函数：关闭监听套接字和 epoll 文件描述符（如果已创建）
 Server::~Server() {
@@ -96,9 +95,6 @@ void Server::handleClient(int client_fd) {
         const char* msg = "get IP address failed";
         strncpy(ip, msg, sizeof(msg));
     }
-
-    // 对Http请求进行返回
-    // Http::sendResponse(client_fd, Http::getRequestPath(buffer), "GET", 200, ip);
 
     Router router("/home/zbw/www/");
     router.route("/index.html", client_fd, ip);

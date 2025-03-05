@@ -8,13 +8,19 @@ CMakeFiles/server.dir/src/impl/http.cpp.o: ../src/impl/http.cpp
 CMakeFiles/server.dir/src/impl/logger.cpp.o: ../src/include/logger.h
 CMakeFiles/server.dir/src/impl/logger.cpp.o: ../src/impl/logger.cpp
 
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/include/config.h
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/include/lru_k_cache.h
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/impl/lru_k_cache.cpp
+
 CMakeFiles/server.dir/src/impl/router.cpp.o: ../src/include/http.h
 CMakeFiles/server.dir/src/impl/router.cpp.o: ../src/include/logger.h
 CMakeFiles/server.dir/src/impl/router.cpp.o: ../src/include/router.h
 CMakeFiles/server.dir/src/impl/router.cpp.o: ../src/impl/router.cpp
 
+CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/config.h
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/http.h
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/logger.h
+CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/lru_k_cache.h
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/router.h
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/server.h
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/include/socket.h

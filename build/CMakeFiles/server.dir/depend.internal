@@ -8,14 +8,20 @@ CMakeFiles/server.dir/src/impl/http.cpp.o
 CMakeFiles/server.dir/src/impl/logger.cpp.o
  ../src/include/logger.h
  /home/zbw/SimpleWebServer/src/impl/logger.cpp
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o
+ ../src/include/config.h
+ ../src/include/lru_k_cache.h
+ /home/zbw/SimpleWebServer/src/impl/lru_k_cache.cpp
 CMakeFiles/server.dir/src/impl/router.cpp.o
  ../src/include/http.h
  ../src/include/logger.h
  ../src/include/router.h
  /home/zbw/SimpleWebServer/src/impl/router.cpp
 CMakeFiles/server.dir/src/impl/server.cpp.o
+ ../src/include/config.h
  ../src/include/http.h
  ../src/include/logger.h
+ ../src/include/lru_k_cache.h
  ../src/include/router.h
  ../src/include/server.h
  ../src/include/socket.h

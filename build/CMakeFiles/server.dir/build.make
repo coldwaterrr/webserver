@@ -83,9 +83,22 @@ CMakeFiles/server.dir/src/impl/logger.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/server.dir/src/impl/logger.cpp.s"
 	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zbw/SimpleWebServer/src/impl/logger.cpp -o CMakeFiles/server.dir/src/impl/logger.cpp.s
 
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: CMakeFiles/server.dir/flags.make
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/impl/lru_k_cache.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o"
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o -c /home/zbw/SimpleWebServer/src/impl/lru_k_cache.cpp
+
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.i: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.i"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/zbw/SimpleWebServer/src/impl/lru_k_cache.cpp > CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.i
+
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.s: cmake_force
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.s"
+	/usr/bin/c++ $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/zbw/SimpleWebServer/src/impl/lru_k_cache.cpp -o CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.s
+
 CMakeFiles/server.dir/src/impl/router.cpp.o: CMakeFiles/server.dir/flags.make
 CMakeFiles/server.dir/src/impl/router.cpp.o: ../src/impl/router.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Building CXX object CMakeFiles/server.dir/src/impl/router.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/server.dir/src/impl/router.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/impl/router.cpp.o -c /home/zbw/SimpleWebServer/src/impl/router.cpp
 
 CMakeFiles/server.dir/src/impl/router.cpp.i: cmake_force
@@ -98,7 +111,7 @@ CMakeFiles/server.dir/src/impl/router.cpp.s: cmake_force
 
 CMakeFiles/server.dir/src/impl/server.cpp.o: CMakeFiles/server.dir/flags.make
 CMakeFiles/server.dir/src/impl/server.cpp.o: ../src/impl/server.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_4) "Building CXX object CMakeFiles/server.dir/src/impl/server.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/server.dir/src/impl/server.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/impl/server.cpp.o -c /home/zbw/SimpleWebServer/src/impl/server.cpp
 
 CMakeFiles/server.dir/src/impl/server.cpp.i: cmake_force
@@ -111,7 +124,7 @@ CMakeFiles/server.dir/src/impl/server.cpp.s: cmake_force
 
 CMakeFiles/server.dir/src/impl/socket.cpp.o: CMakeFiles/server.dir/flags.make
 CMakeFiles/server.dir/src/impl/socket.cpp.o: ../src/impl/socket.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_5) "Building CXX object CMakeFiles/server.dir/src/impl/socket.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/server.dir/src/impl/socket.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/impl/socket.cpp.o -c /home/zbw/SimpleWebServer/src/impl/socket.cpp
 
 CMakeFiles/server.dir/src/impl/socket.cpp.i: cmake_force
@@ -124,7 +137,7 @@ CMakeFiles/server.dir/src/impl/socket.cpp.s: cmake_force
 
 CMakeFiles/server.dir/src/impl/threadpool.cpp.o: CMakeFiles/server.dir/flags.make
 CMakeFiles/server.dir/src/impl/threadpool.cpp.o: ../src/impl/threadpool.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_6) "Building CXX object CMakeFiles/server.dir/src/impl/threadpool.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/server.dir/src/impl/threadpool.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/impl/threadpool.cpp.o -c /home/zbw/SimpleWebServer/src/impl/threadpool.cpp
 
 CMakeFiles/server.dir/src/impl/threadpool.cpp.i: cmake_force
@@ -137,7 +150,7 @@ CMakeFiles/server.dir/src/impl/threadpool.cpp.s: cmake_force
 
 CMakeFiles/server.dir/src/main.cpp.o: CMakeFiles/server.dir/flags.make
 CMakeFiles/server.dir/src/main.cpp.o: ../src/main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_7) "Building CXX object CMakeFiles/server.dir/src/main.cpp.o"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Building CXX object CMakeFiles/server.dir/src/main.cpp.o"
 	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/server.dir/src/main.cpp.o -c /home/zbw/SimpleWebServer/src/main.cpp
 
 CMakeFiles/server.dir/src/main.cpp.i: cmake_force
@@ -152,6 +165,7 @@ CMakeFiles/server.dir/src/main.cpp.s: cmake_force
 server_OBJECTS = \
 "CMakeFiles/server.dir/src/impl/http.cpp.o" \
 "CMakeFiles/server.dir/src/impl/logger.cpp.o" \
+"CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o" \
 "CMakeFiles/server.dir/src/impl/router.cpp.o" \
 "CMakeFiles/server.dir/src/impl/server.cpp.o" \
 "CMakeFiles/server.dir/src/impl/socket.cpp.o" \
@@ -163,6 +177,7 @@ server_EXTERNAL_OBJECTS =
 
 server: CMakeFiles/server.dir/src/impl/http.cpp.o
 server: CMakeFiles/server.dir/src/impl/logger.cpp.o
+server: CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o
 server: CMakeFiles/server.dir/src/impl/router.cpp.o
 server: CMakeFiles/server.dir/src/impl/server.cpp.o
 server: CMakeFiles/server.dir/src/impl/socket.cpp.o
@@ -170,7 +185,7 @@ server: CMakeFiles/server.dir/src/impl/threadpool.cpp.o
 server: CMakeFiles/server.dir/src/main.cpp.o
 server: CMakeFiles/server.dir/build.make
 server: CMakeFiles/server.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_8) "Linking CXX executable server"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/zbw/SimpleWebServer/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_9) "Linking CXX executable server"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/server.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.

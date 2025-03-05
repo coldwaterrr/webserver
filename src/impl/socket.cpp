@@ -44,7 +44,7 @@ void Socket::bind() {
 
 // 将socket设置为监听状态
 void Socket::listen() {
-    ::listen(listend_fd, 42); // 42表示最大连接数
+    ::listen(listend_fd, 200); // 42表示最大连接数
     logger.info("Server listening on port " + std::to_string(port));
 
     // Set the new socket to non-blocking mode

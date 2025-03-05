@@ -3,7 +3,7 @@
 
 
 ThreadPool::ThreadPool(size_t numThreads) : stop(false) {
-    std::string boldNumThreads =  std::to_string(numThreads) + " threads" ; // bold text
+    std::string boldNumThreads =  std::to_string(numThreads) + " threads" ; 
     
     logger.info("Initializing thread pool with " + boldNumThreads,"");
     for (size_t i = 0; i < numThreads; ++i) {

@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.10)
 project(SimpleWebServer)
 
 # 设置 C++ 编译标准为 C++17
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 将 src/include 目录添加到头文件搜索路径中

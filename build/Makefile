@@ -193,6 +193,33 @@ src/impl/logger.cpp.s:
 	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/logger.cpp.s
 .PHONY : src/impl/logger.cpp.s
 
+src/impl/lru_k_cache.o: src/impl/lru_k_cache.cpp.o
+
+.PHONY : src/impl/lru_k_cache.o
+
+# target to build an object file
+src/impl/lru_k_cache.cpp.o:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o
+.PHONY : src/impl/lru_k_cache.cpp.o
+
+src/impl/lru_k_cache.i: src/impl/lru_k_cache.cpp.i
+
+.PHONY : src/impl/lru_k_cache.i
+
+# target to preprocess a source file
+src/impl/lru_k_cache.cpp.i:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.i
+.PHONY : src/impl/lru_k_cache.cpp.i
+
+src/impl/lru_k_cache.s: src/impl/lru_k_cache.cpp.s
+
+.PHONY : src/impl/lru_k_cache.s
+
+# target to generate assembly for a file
+src/impl/lru_k_cache.cpp.s:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.s
+.PHONY : src/impl/lru_k_cache.cpp.s
+
 src/impl/router.o: src/impl/router.cpp.o
 
 .PHONY : src/impl/router.o
@@ -374,6 +401,9 @@ help:
 	@echo "... src/impl/logger.o"
 	@echo "... src/impl/logger.i"
 	@echo "... src/impl/logger.s"
+	@echo "... src/impl/lru_k_cache.o"
+	@echo "... src/impl/lru_k_cache.i"
+	@echo "... src/impl/lru_k_cache.s"
 	@echo "... src/impl/router.o"
 	@echo "... src/impl/router.i"
 	@echo "... src/impl/router.s"
