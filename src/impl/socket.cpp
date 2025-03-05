@@ -16,7 +16,6 @@ Socket::Socket(int port) : port(port){
     }
 }
 
-
 Socket::~Socket() {
     logger.info("Closing server socket");
     close(listend_fd);

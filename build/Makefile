@@ -136,6 +136,33 @@ server/fast:
 	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/build
 .PHONY : server/fast
 
+src/impl/http.o: src/impl/http.cpp.o
+
+.PHONY : src/impl/http.o
+
+# target to build an object file
+src/impl/http.cpp.o:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/http.cpp.o
+.PHONY : src/impl/http.cpp.o
+
+src/impl/http.i: src/impl/http.cpp.i
+
+.PHONY : src/impl/http.i
+
+# target to preprocess a source file
+src/impl/http.cpp.i:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/http.cpp.i
+.PHONY : src/impl/http.cpp.i
+
+src/impl/http.s: src/impl/http.cpp.s
+
+.PHONY : src/impl/http.s
+
+# target to generate assembly for a file
+src/impl/http.cpp.s:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/http.cpp.s
+.PHONY : src/impl/http.cpp.s
+
 src/impl/logger.o: src/impl/logger.cpp.o
 
 .PHONY : src/impl/logger.o
@@ -165,6 +192,33 @@ src/impl/logger.cpp.s:
 	$(MAKE) -f CMakeFiles/test_threadpool.dir/build.make CMakeFiles/test_threadpool.dir/src/impl/logger.cpp.s
 	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/logger.cpp.s
 .PHONY : src/impl/logger.cpp.s
+
+src/impl/router.o: src/impl/router.cpp.o
+
+.PHONY : src/impl/router.o
+
+# target to build an object file
+src/impl/router.cpp.o:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/router.cpp.o
+.PHONY : src/impl/router.cpp.o
+
+src/impl/router.i: src/impl/router.cpp.i
+
+.PHONY : src/impl/router.i
+
+# target to preprocess a source file
+src/impl/router.cpp.i:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/router.cpp.i
+.PHONY : src/impl/router.cpp.i
+
+src/impl/router.s: src/impl/router.cpp.s
+
+.PHONY : src/impl/router.s
+
+# target to generate assembly for a file
+src/impl/router.cpp.s:
+	$(MAKE) -f CMakeFiles/server.dir/build.make CMakeFiles/server.dir/src/impl/router.cpp.s
+.PHONY : src/impl/router.cpp.s
 
 src/impl/server.o: src/impl/server.cpp.o
 
@@ -314,9 +368,15 @@ help:
 	@echo "... edit_cache"
 	@echo "... test_threadpool"
 	@echo "... server"
+	@echo "... src/impl/http.o"
+	@echo "... src/impl/http.i"
+	@echo "... src/impl/http.s"
 	@echo "... src/impl/logger.o"
 	@echo "... src/impl/logger.i"
 	@echo "... src/impl/logger.s"
+	@echo "... src/impl/router.o"
+	@echo "... src/impl/router.i"
+	@echo "... src/impl/router.s"
 	@echo "... src/impl/server.o"
 	@echo "... src/impl/server.i"
 	@echo "... src/impl/server.s"

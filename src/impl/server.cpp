@@ -7,6 +7,8 @@
 #include <iostream>
 #include "threadpool.h"
 #include "socket.h"
+#include "http.h"
+#include "router.h"
 
 
 // 构造函数：初始化端口，设置监听套接字和 epoll 文件描述符的初始值
@@ -82,7 +84,24 @@ void Server::handleClient(int client_fd) {
         return;
     }
 
-    logger.info("Received data: " + std::string(buffer, count), "xxxx");
+    logger.info("Received data: " + std::string(buffer, count));
+
+    // 获取该套接字的IP地址
+    struct sockaddr_in addr;
+    socklen_t addr_len = sizeof(addr);
+    char ip[INET_ADDRSTRLEN];
+    if (getpeername(client_fd, (struct sockaddr *)&addr, &addr_len) == 0) {
+        inet_ntop(AF_INET, &addr.sin_addr, ip, sizeof(ip));
+    } else {
+        const char* msg = "get IP address failed";
+        strncpy(ip, msg, sizeof(msg));
+    }
+
+    // 对Http请求进行返回
+    // Http::sendResponse(client_fd, Http::getRequestPath(buffer), "GET", 200, ip);
+
+    Router router("/home/zbw/www/");
+    router.route("/index.html", client_fd, ip);
 
     // 回显数据
     write(client_fd, buffer, count);
@@ -104,9 +123,21 @@ void Server::handleEvents() {
         int fd = events[i].data.fd;
         // 如果事件来自监听套接字，表示有新连接请求
         if(fd == socka.getListendFd()) {
-            std::string ip = "172.17.55.172";
+
+            // 获取该套接字的IP地址
+            struct sockaddr_in addr;
+            socklen_t addr_len = sizeof(addr);
+            char ip[INET_ADDRSTRLEN];
+            if (getpeername(fd, (struct sockaddr *)&addr, &addr_len) == 0) {
+                inet_ntop(AF_INET, &addr.sin_addr, ip, sizeof(ip));
+            } else {
+                const char* msg = "get IP address failed";
+                strncpy(ip, msg, sizeof(msg));
+            }
+            std::string client_ip(ip);
+
             // 接受新连接
-            int client_fd = socka.acceptConnection(ip);
+            int client_fd = socka.acceptConnection(client_ip);
             if(client_fd == -1) {
                 logger.error("accept failed");
                 continue;

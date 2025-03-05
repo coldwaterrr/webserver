@@ -1,6 +1,7 @@
 #ifndef PGS_SOCKET_HPP
 #define PGS_SOCKET_HPP
 
+#pragma once
 // #include "common.h"
 #include "logger.h"
 

@@ -1,5 +1,7 @@
 file(REMOVE_RECURSE
+  "CMakeFiles/server.dir/src/impl/http.cpp.o"
   "CMakeFiles/server.dir/src/impl/logger.cpp.o"
+  "CMakeFiles/server.dir/src/impl/router.cpp.o"
   "CMakeFiles/server.dir/src/impl/server.cpp.o"
   "CMakeFiles/server.dir/src/impl/socket.cpp.o"
   "CMakeFiles/server.dir/src/impl/threadpool.cpp.o"

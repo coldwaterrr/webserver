@@ -1,8 +1,8 @@
 cmake_minimum_required(VERSION 3.10)
 project(SimpleWebServer)
 
-# 设置 C++ 编译标准为 C++11
-set(CMAKE_CXX_STANDARD 11)
+# 设置 C++ 编译标准为 C++17
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 # 将 src/include 目录添加到头文件搜索路径中
@@ -30,3 +30,4 @@ add_executable(test_threadpool
 find_package(Threads REQUIRED)
 target_link_libraries(server Threads::Threads)
 target_link_libraries(test_threadpool Threads::Threads)
+# target_link_libraries(router std::filesystem)

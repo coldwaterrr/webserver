@@ -63,3 +63,15 @@ void Logger::success(const std::string &msg) {
     LogFile << "[SUCCESS] " << std::ctime(&now_time) << ": " << msg << std::endl;
     LogFile.flush(); // 确保数据立即刷新回磁盘
 }
+
+void Logger::warning(const std::string &msg, const std::string &ip) {
+    std::lock_guard<std::mutex> lock(mtx);
+    
+    auto now = std::chrono::system_clock::now();
+    
+    std::time_t now_time = std::chrono::system_clock::to_time_t(now);
+    
+    std::cerr << "[WARNING] " << std::ctime(&now_time) << ": " << msg << " ip: " << ip << std::endl;
+    LogFile << "[WARNING] " << std::ctime(&now_time) << ": " << msg << " ip: " << ip << std::endl;
+    LogFile.flush(); // 确保数据立即刷新回磁盘
+}

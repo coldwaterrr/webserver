@@ -15,6 +15,8 @@ public:
     void error(const std::string &msg);
     //
     void success(const std::string &msg);
+    //
+    void warning(const std::string &msg, const std::string &ip);
 
 private:
     std::mutex mtx; // 用于保护输出（多线程下保证日志不会交叉）
