@@ -7,6 +7,8 @@
 #include <unistd.h>
 #include <filesystem>
 
+#define MAX_SIZE 8192
+
 // Calculate MIME type based on file extension
 std::string Router::getMimeType(const std::string &path) {
     if (path.rfind(".html") == path.length() - 5)
@@ -43,7 +45,7 @@ std::string Router::readFileContent(const std::string &filePath) {
 }
 
 
-void Router::route(const std::string &path, int client_socket, const std::string &clientIp) {
+std::string Router::route(const std::string &path, int client_socket, const std::string &clientIp) {
     std::string filePath = staticFolder + path;
     if (path == "/index.html") {
         logger.info("Routing request: " + path, clientIp);
@@ -56,17 +58,17 @@ void Router::route(const std::string &path, int client_socket, const std::string
             logger.info("Directory requested, serving index.html", clientIp);
         }
     }
-
+    std::string response = "";
     // Check if the file exists
     if (!std::filesystem::exists(filePath) || std::filesystem::is_directory(filePath)) {
         logger.warning("File not found: " + filePath, clientIp);
-        const char *response =
+            response =
             "HTTP/1.1 404 Not Found\r\n"
             "Content-Type: text/plain\r\n"
             "Content-Length: 9\r\n"
             "\r\n"
             "Not Found";
-        send(client_socket, response, strlen(response), 0);
+        send(client_socket, response.c_str(), strlen(response.c_str()), 0);
     }
     else {
         logger.info("the file is exists");
@@ -74,13 +76,14 @@ void Router::route(const std::string &path, int client_socket, const std::string
         std::string content = readFileContent(filePath);
         // logger.info("the content is: " + content);
         std::string mimeType = getMimeType(filePath);
-        Http::sendResponse(client_socket, content, mimeType, 200, clientIp);
+        response = Http::sendResponse(client_socket, content, mimeType, 200, clientIp);
     }
 
     // usleep(100000); // 1 毫秒
     // Close the client socket and log
-    close(client_socket);
-    if (path == "/index.html") {
-        logger.info("Connection closed", clientIp);
-    }
+    // close(client_socket);
+    // if (path == "/index.html") {
+    //     logger.info("Connection closed", clientIp);
+    // }
+    return response;
 }

@@ -10,6 +10,7 @@ CMakeFiles/server.dir/src/impl/logger.cpp.o
  /home/zbw/SimpleWebServer/src/impl/logger.cpp
 CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o
  ../src/include/config.h
+ ../src/include/logger.h
  ../src/include/lru_k_cache.h
  /home/zbw/SimpleWebServer/src/impl/lru_k_cache.cpp
 CMakeFiles/server.dir/src/impl/router.cpp.o
@@ -36,7 +37,9 @@ CMakeFiles/server.dir/src/impl/threadpool.cpp.o
  ../src/include/threadpool.h
  /home/zbw/SimpleWebServer/src/impl/threadpool.cpp
 CMakeFiles/server.dir/src/main.cpp.o
+ ../src/include/config.h
  ../src/include/logger.h
+ ../src/include/lru_k_cache.h
  ../src/include/server.h
  ../src/include/socket.h
  ../src/include/threadpool.h

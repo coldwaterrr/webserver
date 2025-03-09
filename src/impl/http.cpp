@@ -4,6 +4,9 @@
 #include "logger.h"
 #include "http.h"
 #include <sstream>
+#include <cstring>
+
+#define MAX_SIZE 8192
 
 std::string Http::getRequestPath(const std::string &request) {
     size_t pos1 = request.find("GET ");
@@ -14,22 +17,25 @@ std::string Http::getRequestPath(const std::string &request) {
     return request.substr(pos1 + 4, pos2 - (pos1 + 4)); // Extract the path from the request
 }
 
-void Http::sendResponse(int client_socket, const std::string &content,
+std::string Http::sendResponse(int client_socket, const std::string &content,
                         const std::string &mimeType, int statusCode, const std::string &clientIp) {
     std::ostringstream response;
     Logger logger;
     response << "HTTP/1.1 " << statusCode << " OK\r\n"
              << "Content-Type: " << mimeType << "\r\n"
+             << "Connection: keep-alive\r\n"
              << "Content-Length: " << content.size() << "\r\n"
              << "\r\n"
              << content;
-    send(client_socket, response.str().c_str(), response.str().size(), 0);
-    // logger.info("receive http request:");
-    // logger.info(response.str().c_str());
-    // logger.info()
+    std::string responseStr = response.str();
+    // memcpy(data, response.str().c_str(), sizeof(response.str().c_str()));
+    send(client_socket, responseStr.c_str(), responseStr.size(), 0);
+
     logger.info(
         "Response sent: status=" + std::to_string(statusCode) +
             ", size=" + std::to_string(content.size()) +
             ", type=" + mimeType,
         clientIp);
+
+    return responseStr;
 }

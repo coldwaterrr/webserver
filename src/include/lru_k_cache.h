@@ -4,19 +4,18 @@
 #include <list>
 #include <optional>
 #include <unordered_map>
-#include <mutex>
+#include <mutex> 
 #include "config.h"
+#include "logger.h"
 
 class LRUKNode {
     private:
         /** 该页面最近访问的K个时间戳的历史记录。最早的时间戳存储在前面。 */
-        // Remove maybe_unused if you start using them. Feel free to change the member variables as you want.
-
         std::list<size_t> history_;
         size_t k_{0x3f3f3f3f};
         frame_id_t fid_;
         size_t time_;
-        bool is_evictable_{false};
+        bool is_evictable_{true};
 
     public:
         LRUKNode() = default;
@@ -70,12 +69,11 @@ class LRUKCache {
     // void Reset(frame_id_t frame_id);
   
    private:
-    // TODO(student): implement me! You can replace these member variables as you like.
-    // Remove maybe_unused if you start using them.
     std::unordered_map<frame_id_t, LRUKNode> node_store_;
     size_t current_timestamp_{0};
     size_t curr_size_{0};
     size_t cache_size_;
     size_t k_;
     std::mutex latch_;  //闩锁
+    Logger logger;
 };

@@ -9,6 +9,7 @@ CMakeFiles/server.dir/src/impl/logger.cpp.o: ../src/include/logger.h
 CMakeFiles/server.dir/src/impl/logger.cpp.o: ../src/impl/logger.cpp
 
 CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/include/config.h
+CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/include/logger.h
 CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/include/lru_k_cache.h
 CMakeFiles/server.dir/src/impl/lru_k_cache.cpp.o: ../src/impl/lru_k_cache.cpp
 
@@ -35,7 +36,9 @@ CMakeFiles/server.dir/src/impl/threadpool.cpp.o: ../src/include/logger.h
 CMakeFiles/server.dir/src/impl/threadpool.cpp.o: ../src/include/threadpool.h
 CMakeFiles/server.dir/src/impl/threadpool.cpp.o: ../src/impl/threadpool.cpp
 
+CMakeFiles/server.dir/src/main.cpp.o: ../src/include/config.h
 CMakeFiles/server.dir/src/main.cpp.o: ../src/include/logger.h
+CMakeFiles/server.dir/src/main.cpp.o: ../src/include/lru_k_cache.h
 CMakeFiles/server.dir/src/main.cpp.o: ../src/include/server.h
 CMakeFiles/server.dir/src/main.cpp.o: ../src/include/socket.h
 CMakeFiles/server.dir/src/main.cpp.o: ../src/include/threadpool.h

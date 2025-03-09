@@ -8,7 +8,9 @@ CMakeFiles/test_threadpool.dir/src/impl/threadpool.cpp.o: ../src/include/logger.
 CMakeFiles/test_threadpool.dir/src/impl/threadpool.cpp.o: ../src/include/threadpool.h
 CMakeFiles/test_threadpool.dir/src/impl/threadpool.cpp.o: ../src/impl/threadpool.cpp
 
+CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/config.h
 CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/logger.h
+CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/lru_k_cache.h
 CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/server.h
 CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/socket.h
 CMakeFiles/test_threadpool.dir/src/test/test_threadpool.cpp.o: ../src/include/threadpool.h

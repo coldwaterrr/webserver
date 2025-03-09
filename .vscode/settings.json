@@ -76,6 +76,7 @@
         "io_context": "cpp",
         "netfwd": "cpp",
         "socket": "cpp",
-        "filesystem": "cpp"
+        "filesystem": "cpp",
+        "ciso646": "cpp"
     }
 }
