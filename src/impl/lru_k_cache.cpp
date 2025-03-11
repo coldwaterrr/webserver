@@ -6,81 +6,85 @@ LRUKCache::LRUKCache(size_t num_frames, size_t k) : cache_size_(num_frames), k_(
 LRUKNode::LRUKNode(frame_id_t frame_id) : fid_(frame_id) {}
 
 auto LRUKCache::Evict() -> std::optional<frame_id_t> {
-    // // 加锁
-    latch_.lock();
-    // std::lock_guard<std::mutex> lock(latch_);
-    logger.info("Evict the frame");
-    //更新距离k
-    for (auto &[k, v] : node_store_) {
-      if (static_cast<size_t>(v.GetHistorySize()) >= k_) {
-        node_store_[k].Setk(current_timestamp_ - v.GetBackHistory());
-      }
-    }
-  
-    //假设有+inf
-    int min = 0x3f3f3f3f;
-    frame_id_t flag_1 = -1;
-    for (auto &[k, v] : node_store_) {
-      if (v.Getk() == 0x3f3f3f3f && v.GetIsEvictable() && static_cast<int>(v.GetBackHistory()) < min) {
-        min = v.GetBackHistory();
-        flag_1 = k;
-      }
-    }
-  
-    if (flag_1 != -1) {
-      Remove(flag_1);
+    std::lock_guard<std::mutex> lock(latch_);
+    logger.info("Attempting to evict a frame");
 
-      // 解锁
-      latch_.unlock();
-      return flag_1;
+    if (node_store_.empty()) {
+        logger.error("Cache is empty");
+        return std::nullopt;
     }
-  
-    //如果没有+inf
-    int max = 0;
-    frame_id_t flag_2 = -1;
-    for (auto &[k, v] : node_store_) {
-      if (v.GetIsEvictable()) {
-        if (static_cast<int>(v.Getk()) >= max) {
-          max = v.Getk();
-          flag_2 = k;
+
+    // 首先尝试驱逐访问次数少于k次的页面（按照最早访问时间）
+    size_t earliest_timestamp = current_timestamp_ + 1;
+    frame_id_t victim_id = -1;
+
+    for (const auto &[id, node] : node_store_) {
+        if (!node.GetIsEvictable()) continue;
+        
+        if (node.GetHistorySize() < static_cast<int>(k_)) {
+            if (node.GetBackHistory() < earliest_timestamp) {
+                earliest_timestamp = node.GetBackHistory();
+                victim_id = id;
+            }
         }
-      }
     }
-    if (flag_2 != -1) {
-      Remove(flag_2);
-      // 解锁
-      latch_.unlock();
-      return flag_2;
+
+    if (victim_id != -1) {
+        logger.info("Evicting frame with insufficient history: " + std::to_string(victim_id));
+        Remove(victim_id);
+        return victim_id;
     }
-    // 解锁
-    latch_.unlock();
-    //没有可驱逐的帧
+
+    // 如果没有访问次数少于k次的页面，选择k距离最大的页面
+    size_t max_k_distance = 0;
+    victim_id = -1;
+
+    for (const auto &[id, node] : node_store_) {
+        if (!node.GetIsEvictable()) continue;
+        
+        if (node.GetHistorySize() >= static_cast<int>(k_)) {
+            size_t k_distance = current_timestamp_ - node.GetFrontHistory();
+            if (k_distance > max_k_distance) {
+                max_k_distance = k_distance;
+                victim_id = id;
+            }
+        }
+    }
+
+    if (victim_id != -1) {
+        logger.info("Evicting frame with largest k-distance: " + std::to_string(victim_id));
+        Remove(victim_id);
+        return victim_id;
+    }
+
+    logger.error("No evictable frames found");
     return std::nullopt;
 }
 
 void LRUKCache::RecordAccess(frame_id_t frame_id) {
     std::lock_guard<std::mutex> lock(latch_);
     
-    logger.info("access the Cache");
+    logger.info("Recording access for frame: " + std::to_string(frame_id));
     current_timestamp_++;
+
+    // 检查frame_id是否有效
+    if (static_cast<size_t>(frame_id) >= cache_size_) {
+        logger.error("Invalid frame_id: " + std::to_string(frame_id));
+        throw std::runtime_error("Invalid frame_id");
+    }
+
+    // 如果是新的frame
     if (node_store_.find(frame_id) == node_store_.end()) {
-        // 如果是新的客户
         LRUKNode n{frame_id};
         n.AddTime(current_timestamp_);
         node_store_[frame_id] = n;
-    } else if (static_cast<size_t>(frame_id) >= cache_size_) {
-        //抛出异常
-        throw "没有该client_fd";
-        // 解锁
-        // latch_.unlock();
-        return;
+        curr_size_++;
+        logger.info("Created new node for frame: " + std::to_string(frame_id));
     } else {
+        // 更新已存在的frame
         node_store_[frame_id].AddTime(current_timestamp_);
-        if (node_store_[frame_id].GetHistorySize() >= static_cast<int>(k_)) {
-        node_store_[frame_id].Settime(current_timestamp_);
-        }
+        logger.info("Updated existing node for frame: " + std::to_string(frame_id));
     }
-    // latch_.unlock();
 }
 
 void LRUKCache::SetEvictable(frame_id_t frame_id, bool set_evictable) {
@@ -106,17 +110,18 @@ void LRUKCache::SetEvictable(frame_id_t frame_id, bool set_evictable) {
 }
 
 void LRUKCache::Remove(frame_id_t frame_id) {
-    std::lock_guard<std::mutex> lock(latch_);
     if (node_store_.find(frame_id) == node_store_.end()) {
         return;
     }
 
     if (!node_store_[frame_id].GetIsEvictable()) {
-        throw "不可驱逐该client_fd";
+        logger.error("Attempting to remove non-evictable frame: " + std::to_string(frame_id));
         return;
     }
+
     node_store_.erase(frame_id);
     curr_size_--;
+    logger.info("Removed frame: " + std::to_string(frame_id));
 }
 
 auto LRUKCache::Size() -> size_t { return curr_size_; }

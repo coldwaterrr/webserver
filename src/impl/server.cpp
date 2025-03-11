@@ -1,6 +1,7 @@
 #include "server.h"
 #include <sys/socket.h>  // socket、bind、listen、accept 等函数
 #include <netinet/in.h>  // sockaddr_in 结构体
+#include <netinet/tcp.h> // TCP_NODELAY
 #include <fcntl.h>       // fcntl 函数，用于设置非阻塞
 #include <unistd.h>      // close 函数
 #include <cstring>       // memset 函数
@@ -91,9 +92,9 @@ bool Server::setupEpoll() {
         return false;
     }
 
-    // 配置监听套接字的 epoll 事件：关注可读事件（EPOLLIN）
+    // 配置监听套接字的 epoll 事件：
     epoll_event event;
-    event.events = EPOLLIN; // 表示关注数据可读事件
+    event.events = EPOLLIN; // 
     event.data.fd = socka.getListendFd();
     // 将监听套接字添加到 epoll 监控列表中
     if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, socka.getListendFd(), &event) < 0) {
@@ -115,170 +116,235 @@ bool Server::init() {
 }
 
 void Server::cacheManage(client_id_t client_id, std::string buf) {
-    // std::lock_guard<std::mutex> lock(mutex_);
-    logger.info("what the fuck!!!!!!!!!!");
+    logger.info("Cache management for client: " + std::to_string(client_id));
 
-    // 不在内存中
-    // if(client_table_.find(client_id) == client_table_.end()) {
-        // logger.info("the response is: ");
-        // logger.info(buf.c_str());
-        // 有足够的内存，分配空闲内存
-        frame_id_t frame_id;
-        if(!free_frames_.empty()) {
-            logger.info("有空闲空间");
-            frame_id = free_frames_.back();
-            client_table_[client_id] = frame_id;
-            free_frames_.pop_back();
-            std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
-            logger.info("Added client_fd: " + std::to_string(client_id) + ", frame_id: " + std::to_string(frame_id));  // 添加日志
-            // logger.info("the cache Manage is:");
-            // logger.info(frames_[frame_id]->GetDataMut());
+    // 如果已经在内存中，只需要更新访问记录
+    if(client_table_.find(client_id) != client_table_.end()) {
+        frame_id_t frame_id = client_table_[client_id];
+        std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
+        cache_->RecordAccess(frame_id);
+        logger.info("Updated existing cache entry for client: " + std::to_string(client_id));
+        return;
+    }
+
+    // 不在内存中，需要分配新的frame
+    frame_id_t frame_id;
+    if(!free_frames_.empty()) {
+        logger.info("Allocating from free frames");
+        frame_id = free_frames_.back();
+        free_frames_.pop_back();
+    } else {
+        // 内存不够，需要驱逐
+        logger.info("No free frames, attempting eviction");
+        auto outframe = cache_->Evict();
+        if(!outframe.has_value()) {
+            logger.error("Eviction failed - no evictable frames");
+            return;
         }
-        else { // 内存不够，驱逐
-            if(cache_->Evict().has_value()) {
-                frame_id = cache_->Evict().value();
-                std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
-                client_table_[client_id] = frame_id;  // 插入数据
-                logger.info("Evicted and added client_fd: " + std::to_string(client_id) + ", frame_id: " + std::to_string(frame_id));
-            } else {
-                logger.error("can't evict any frame");   
+        frame_id = outframe.value();
+        // 将原来的client_id删掉
+        for(auto [k,v] : client_table_) {
+            if(v == frame_id) {
+                client_table_.erase(k);
+                break;
             }
         }
-    // }
+    }
 
+    // 更新缓存
+    client_table_[client_id] = frame_id;
+    std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
+    cache_->RecordAccess(frame_id);
+    logger.info("Added new cache entry - client: " + std::to_string(client_id) + ", frame: " + std::to_string(frame_id));
 }
 
 // 处理客户端
 void Server::handleClient(int client_fd) {
-    // std::lock_guard<std::mutex> lock(*bpm_latch_);
-    // std::lock_guard<std::mutex> lock(mutex_);
-    mutex_.lock();
-    logger.info("handle client!");
-    std::cout << "ok" <<std::endl;
-    std::cout << sizeof(client_table_) << std::endl;
-    if (client_table_.empty()) {
-        std::cout << "client_table_ is empty" << std::endl;
-    } else {
-        for (auto [k, v] : client_table_) {
-            std::cout << v << ":" << k << std::endl;
-        }
-    }
+    std::lock_guard<std::mutex> lock(mutex_);
+    
+    logger.info("Handling client: " + std::to_string(client_fd));
+
     // 在内存中,直接send数据然后返回
     if(client_table_.find(client_fd) != client_table_.end()) {
-        logger.info("in the cache!!!!!!");
-        cache_->RecordAccess(client_table_[client_fd]);
-        // logger.info("the content is: ");
-        // logger.info(frames_[client_table_[client_fd]]->GetData());
-        ssize_t bytes_sent = send(client_fd, frames_[client_table_[client_fd]]->GetData(), strlen(frames_[client_table_[client_fd]]->GetData()), 0);
-        if (bytes_sent < 0) {
-            logger.error("send failed: " + std::string(strerror(errno)));
-        } else {
-            logger.success("send the msg, bytes sent: " + std::to_string(bytes_sent));
+        frame_id_t frame_id = client_table_[client_fd];
+        cache_->RecordAccess(frame_id);
+        logger.info("Cache hit for client: " + std::to_string(client_fd));
+        
+        const char* data = frames_[frame_id]->GetData();
+        size_t total_len = strlen(data);
+        size_t sent = 0;
+        
+        while (sent < total_len) {
+            ssize_t n = send(client_fd, data + sent, total_len - sent, MSG_NOSIGNAL);
+            if (n <= 0) {
+                if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                    // 如果发送缓冲区满，等待一下再试
+                    usleep(1000); // 等待1ms
+                    continue;
+                }
+                logger.error("Send failed: " + std::string(strerror(errno)));
+                break;
+            }
+            sent += n;
         }
-        // close(client_fd); // 这里是否应该关闭呢？
-        mutex_.unlock();
+        
+        // 不要立即关闭连接，让客户端决定是否保持连接
         return;
     }
 
+    // 缓存未命中，需要处理新请求
     char buffer[MAX_SIZE];
-    int count = read(client_fd, buffer, sizeof(buffer));
-
-    if (count <= 0) {
-        logger.error("read failed and close connect");
-        close(client_fd);  // 读取失败或关闭连接
-        mutex_.unlock();
-        return;
+    ssize_t total = 0;
+    
+    while (true) {
+        ssize_t n = read(client_fd, buffer + total, sizeof(buffer) - total - 1);
+        if (n < 0) {
+            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                if (total > 0) break;  // 如果已经读取了一些数据，就处理它
+                usleep(1000); // 否则等待更多数据
+                continue;
+            }
+            logger.error("Read failed: " + std::string(strerror(errno)));
+            close(client_fd);
+            return;
+        }
+        if (n == 0) {
+            if (total == 0) {
+                // 客户端关闭了连接
+                close(client_fd);
+                return;
+            }
+            break;  // 读取完成
+        }
+        total += n;
+        if (total >= sizeof(buffer) - 1) {
+            break;  // 缓冲区满
+        }
+        
+        // 检查是否收到了完整的HTTP请求
+        if (total >= 4 && 
+            strstr(buffer, "\r\n\r\n") != nullptr) {
+            break;  // 找到了HTTP请求结束标记
+        }
     }
 
-    logger.info("Received data: " + std::string(buffer, count));
+    buffer[total] = '\0';
+    logger.info("Received request, size: " + std::to_string(total));
 
-    // 获取该套接字的IP地址
-    struct sockaddr_in addr;
-    socklen_t addr_len = sizeof(addr);
-    char ip[INET_ADDRSTRLEN];
-    if (getpeername(client_fd, (struct sockaddr *)&addr, &addr_len) == 0) {
-        inet_ntop(AF_INET, &addr.sin_addr, ip, sizeof(ip));
-    } else {
-        const char* msg = "get IP address failed";
-        strncpy(ip, msg, sizeof(msg));
+    // 解析HTTP请求
+    std::string request(buffer);
+    std::string path;
+    size_t pathStart = request.find("GET ") + 4;
+    if (pathStart != std::string::npos) {
+        size_t pathEnd = request.find(" HTTP", pathStart);
+        if (pathEnd != std::string::npos) {
+            path = request.substr(pathStart, pathEnd - pathStart);
+        }
     }
 
-    // std::lock_guard<std::mutex> lock(*bpm_latch_);
-    // std::lock_guard<std::mutex> lock(mutex_);
+    if (path.empty()) {
+        path = "/index.html";  // 默认页面
+    }
+
+    // 检查是否是Keep-Alive连接
+    bool keepAlive = (request.find("Connection: keep-alive") != std::string::npos);
+
+    // 处理请求并缓存响应
     Router router("/home/zbw/www");
-    std::string response = router.route("/test.html", client_fd, ip);
-    cache_->RecordAccess(client_table_[client_fd]);
-
-    // logger.info("cacheManage response:  ");
-    // logger.info(response);
+    std::string response = router.route(path, client_fd, "");
     cacheManage(client_fd, response);
     
-    // 回显数据
-    // write(client_fd, buffer, count);
-    close(client_fd);
-    mutex_.unlock();
-   // bpm_latch_->unlock();
+    if (!keepAlive) {
+        close(client_fd);
+    }
 }
 
 // 处理 epoll 返回的所有事件
 void Server::handleEvents() {
-    // std::lock_guard<std::mutex> lock(*bpm_latch_);
-    // 定义事件数组，用于存放 epoll_wait 返回的事件
     epoll_event events[MAX_EVENTS];
-    // 阻塞等待事件发生，-1 表示无限等待
     int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
     if(nfds < 0) {
-        logger.error("epoll_wait error");
+        if (errno == EINTR) {
+            return;  // 被信号中断，直接返回
+        }
+        logger.error("epoll_wait error: " + std::string(strerror(errno)));
         return;
     }
 
-    // 遍历所有返回的事件
     for (int i = 0; i < nfds; ++i) {
-        // logger.info("a new fd come in");
         int fd = events[i].data.fd;
-        // 如果事件来自监听套接字，表示有新连接请求
+        uint32_t ev = events[i].events;
+        
         if(fd == socka.getListendFd()) {
-            // std::lock_guard<std::mutex> lock(*bpm_latch_);
-            bpm_latch_->lock();
-            logger.info("a new listend fd come in");
+            std::lock_guard<std::mutex> lock(*bpm_latch_);
             
-            // 获取该套接字的IP地址
-            struct sockaddr_in addr;
-            socklen_t addr_len = sizeof(addr);
-            char ip[INET_ADDRSTRLEN];
-            if (getpeername(fd, (struct sockaddr *)&addr, &addr_len) == 0) {
-                inet_ntop(AF_INET, &addr.sin_addr, ip, sizeof(ip));
-            } else {
-                const char* msg = "get IP address failed";
-                strncpy(ip, msg, sizeof(msg));
-            }
-            std::string client_ip(ip);
-
             // 接受新连接
+            std::string client_ip;
             int client_fd = socka.acceptConnection(client_ip);
             if(client_fd == -1) {
-                logger.error("accept failed");
-                bpm_latch_->unlock();
+                if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                    logger.error("accept failed: " + std::string(strerror(errno)));
+                }
                 continue;
             }
 
-            // 配置新连接的 epoll 事件，使用边缘触发模式（EPOLLET）
-            epoll_event event;
-            event.events = EPOLLIN | EPOLLET;
-            event.data.fd = client_fd;
-            if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
-                logger.error("epoll_ctl add client failed");
+            // 设置非阻塞模式
+            int flags = fcntl(client_fd, F_GETFL, 0);
+            if (flags == -1) {
+                logger.error("fcntl F_GETFL failed");
                 close(client_fd);
-                bpm_latch_->unlock();
                 continue;
             }
-            logger.info("Accepted new connection",std::string(ip));
-            bpm_latch_->unlock();
+            if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
+                logger.error("fcntl F_SETFL failed");
+                close(client_fd);
+                continue;
+            }
+            
+            // 设置TCP_NODELAY
+            int optval = 1;
+            if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval)) < 0) {
+                logger.error("setsockopt TCP_NODELAY failed");
+                close(client_fd);
+                continue;
+            }
+
+            // 设置接收超时
+            struct timeval tv;
+            tv.tv_sec = 5;  // 5秒超时
+            tv.tv_usec = 0;
+            if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
+                logger.error("setsockopt SO_RCVTIMEO failed");
+                close(client_fd);
+                continue;
+            }
+            
+            epoll_event event;
+            event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;  // 使用EPOLLONESHOT防止多线程竞争
+            event.data.fd = client_fd;
+            
+            if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
+                logger.error("epoll_ctl add client failed: " + std::string(strerror(errno)));
+                close(client_fd);
+                continue;
+            }
+            logger.info("Accepted new connection, fd: " + std::to_string(client_fd));
         } else {
-            // std::lock_guard<std::mutex> lock(mutex_);
-            logger.info("a new client fd come in");
-            thread_pool.enqueue([this, fd]() { handleClient(fd); });
-            // close(fd);
+            if ((ev & EPOLLERR) || (ev & EPOLLHUP)) {
+                logger.error("epoll error on fd " + std::to_string(fd));
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                close(fd);
+                continue;
+            }
+
+            if (ev & EPOLLIN) {
+                // 将fd从epoll中移除，防止重复触发
+                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                
+                thread_pool.enqueue([this, fd]() {
+                    handleClient(fd);
+                });
+            }
         }
     }
 }

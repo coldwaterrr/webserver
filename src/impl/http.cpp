@@ -29,7 +29,8 @@ std::string Http::sendResponse(int client_socket, const std::string &content,
              << content;
     std::string responseStr = response.str();
     // memcpy(data, response.str().c_str(), sizeof(response.str().c_str()));
-    send(client_socket, responseStr.c_str(), responseStr.size(), 0);
+    size_t bytes_sent = send(client_socket, responseStr.c_str(), responseStr.size(), 0);
+    logger.success("send the msg, bytes sent: " + std::to_string(bytes_sent));
 
     logger.info(
         "Response sent: status=" + std::to_string(statusCode) +

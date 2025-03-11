@@ -21,32 +21,32 @@ class LRUKNode {
         LRUKNode() = default;
         explicit LRUKNode(frame_id_t frame_id);
 
-        auto Getk() -> size_t { return k_; }
+        auto Getk() const -> size_t { return k_; }
 
         void Setk(size_t k) { k_ = k; }
 
         void Settime(size_t x) { time_ = x; }
 
-        auto Gettime() -> size_t { return time_; }
+        auto Gettime() const -> size_t { return time_; }
 
         void AddTime(size_t time) {
-        if (history_.size() >= k_) {
-            history_.pop_front();
-        }
-        history_.push_back(time);
+            if (history_.size() >= k_) {
+                history_.pop_front();
+            }
+            history_.push_back(time);
         }
 
-        auto GetHistorySize() -> int { return history_.size(); }
+        auto GetHistorySize() const -> int { return history_.size(); }
 
-        auto GetIsEvictable() -> bool { return is_evictable_; }
+        auto GetIsEvictable() const -> bool { return is_evictable_; }
 
         void SetIsEvictable(bool is_evictable) { is_evictable_ = is_evictable; }
 
-        auto GetFrontHistory() -> size_t { return history_.front(); }
+        auto GetFrontHistory() const -> size_t { return history_.front(); }
 
-        auto GetBackHistory() -> size_t { return history_.back(); }
+        auto GetBackHistory() const -> size_t { return history_.back(); }
 
-        auto Getid() -> frame_id_t { return fid_; }
+        auto Getid() const -> frame_id_t { return fid_; }
 };
 
 class LRUKCache {

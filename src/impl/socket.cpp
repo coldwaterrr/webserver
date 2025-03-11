@@ -19,7 +19,7 @@ Socket::Socket(int port) : port(port){
 Socket::~Socket() {
     logger.info("Closing server socket");
     close(listend_fd);
-    close(server_fd);
+    close(client_fd);
 }
 
 // 将socket与 IP地址和端口绑定
@@ -44,14 +44,14 @@ void Socket::bind() {
 
 // 将socket设置为监听状态
 void Socket::listen() {
-    ::listen(listend_fd, 200); // 42表示最大连接数
+    ::listen(listend_fd, SOMAXCONN); // 200表示最大连接数
     logger.info("Server listening on port " + std::to_string(port));
 
     // Set the new socket to non-blocking mode
     int flags = fcntl(listend_fd, F_GETFL, 0); // Get the socket flags
     if (flags == -1) {
         logger.error("Failed to get socket flags");
-        close(client_fd);
+        close(listend_fd);
     }
     if (fcntl(listend_fd, F_SETFL, flags | O_NONBLOCK) == -1) { // Set the socket to non-blocking mode
         logger.error("Failed to set socket to non-blocking mode");
@@ -90,7 +90,7 @@ int Socket::acceptConnection(std::string &clientIp) {
 }
 
 int Socket::getSocketFd() const {
-    return server_fd;
+    return client_fd;
 }
 
 int Socket::getListendFd() const {
