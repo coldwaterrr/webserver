@@ -2,6 +2,7 @@
 #include <sys/socket.h>  // socket、bind、listen、accept 等函数
 #include <netinet/in.h>  // sockaddr_in 结构体
 #include <netinet/tcp.h> // TCP_NODELAY
+#include <sys/uio.h>
 #include <fcntl.h>       // fcntl 函数，用于设置非阻塞
 #include <unistd.h>      // close 函数
 #include <cstring>       // memset 函数
@@ -115,15 +116,15 @@ bool Server::init() {
     return true;
 }
 
-void Server::cacheManage(client_id_t client_id, std::string buf) {
-    logger.info("Cache management for client: " + std::to_string(client_id));
+void Server::cacheManage(const std::string& cache_key, std::string buf) {
+    logger.info("Cache management for path: " + cache_key);
 
     // 如果已经在内存中，只需要更新访问记录
-    if(client_table_.find(client_id) != client_table_.end()) {
-        frame_id_t frame_id = client_table_[client_id];
+    if(client_table_.find(cache_key) != client_table_.end()) {
+        frame_id_t frame_id = client_table_[cache_key];
         std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
         cache_->RecordAccess(frame_id);
-        logger.info("Updated existing cache entry for client: " + std::to_string(client_id));
+        logger.info("Updated existing cache entry for path: " + cache_key);
         return;
     }
 
@@ -142,209 +143,204 @@ void Server::cacheManage(client_id_t client_id, std::string buf) {
             return;
         }
         frame_id = outframe.value();
-        // 将原来的client_id删掉
-        for(auto [k,v] : client_table_) {
-            if(v == frame_id) {
-                client_table_.erase(k);
-                break;
+        
+        // 找到并删除被驱逐的缓存项
+        for(auto it = client_table_.begin(); it != client_table_.end(); ) {
+            if(it->second == frame_id) {
+                logger.info("Evicting cache entry for path: " + it->first);
+                it = client_table_.erase(it);
+            } else {
+                ++it;
             }
         }
     }
 
     // 更新缓存
-    client_table_[client_id] = frame_id;
+    client_table_[cache_key] = frame_id;
     std::strncpy(frames_[frame_id]->GetDataMut(), buf.c_str(), MAX_SIZE);
     cache_->RecordAccess(frame_id);
-    logger.info("Added new cache entry - client: " + std::to_string(client_id) + ", frame: " + std::to_string(frame_id));
+    logger.info("Added new cache entry - path: " + cache_key + ", frame: " + std::to_string(frame_id));
 }
 
 // 处理客户端
 void Server::handleClient(int client_fd) {
-    std::lock_guard<std::mutex> lock(mutex_);
-    
-    logger.info("Handling client: " + std::to_string(client_fd));
+    std::unique_ptr<char[]> buffer(new char[MAX_SIZE]);
+    size_t total_read = 0;
+    ssize_t bytes_read;
 
-    // 在内存中,直接send数据然后返回
-    if(client_table_.find(client_fd) != client_table_.end()) {
-        frame_id_t frame_id = client_table_[client_fd];
-        cache_->RecordAccess(frame_id);
-        logger.info("Cache hit for client: " + std::to_string(client_fd));
-        
-        const char* data = frames_[frame_id]->GetData();
-        size_t total_len = strlen(data);
-        size_t sent = 0;
-        
-        while (sent < total_len) {
-            ssize_t n = send(client_fd, data + sent, total_len - sent, MSG_NOSIGNAL);
-            if (n <= 0) {
-                if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                    // 如果发送缓冲区满，等待一下再试
-                    usleep(1000); // 等待1ms
-                    continue;
-                }
-                logger.error("Send failed: " + std::string(strerror(errno)));
-                break;
-            }
-            sent += n;
-        }
-        
-        // 不要立即关闭连接，让客户端决定是否保持连接
-        return;
-    }
-
-    // 缓存未命中，需要处理新请求
-    char buffer[MAX_SIZE];
-    ssize_t total = 0;
+    // 使用状态机解析HTTP请求
+    HttpRequestParser parser;
     
     while (true) {
-        ssize_t n = read(client_fd, buffer + total, sizeof(buffer) - total - 1);
-        if (n < 0) {
+        bytes_read = read(client_fd, buffer.get() + total_read, MAX_SIZE - total_read);
+        if (bytes_read < 0) {
             if (errno == EAGAIN || errno == EWOULDBLOCK) {
-                if (total > 0) break;  // 如果已经读取了一些数据，就处理它
-                usleep(1000); // 否则等待更多数据
-                continue;
+                break;  // 没有更多数据可读
             }
-            logger.error("Read failed: " + std::string(strerror(errno)));
+            logger.error("Read error: " + std::string(strerror(errno)));
             close(client_fd);
             return;
         }
-        if (n == 0) {
-            if (total == 0) {
-                // 客户端关闭了连接
-                close(client_fd);
-                return;
-            }
-            break;  // 读取完成
+        if (bytes_read == 0) {
+            close(client_fd);  // 连接已关闭
+            return;
         }
-        total += n;
-        if (total >= sizeof(buffer) - 1) {
-            break;  // 缓冲区满
+
+        total_read += bytes_read;
+        auto result = parser.parse(buffer.get(), total_read);
+        
+        if (result.state == HttpRequestParser::State::ERROR) {
+            // 发送400错误响应
+            std::string error_response = Http::buildResponse("Bad Request", "text/plain", 400);
+            send(client_fd, error_response.c_str(), error_response.length(), MSG_NOSIGNAL);
+            close(client_fd);
+            return;
         }
         
-        // 检查是否收到了完整的HTTP请求
-        if (total >= 4 && 
-            strstr(buffer, "\r\n\r\n") != nullptr) {
-            break;  // 找到了HTTP请求结束标记
+        if (result.isComplete()) {
+            // 处理缓存
+            std::string cache_key = result.path;
+            bool cache_hit = false;
+            
+            {
+                std::shared_lock<std::shared_mutex> lock(cache_mutex_);
+                if (client_table_.find(cache_key) != client_table_.end()) {
+                    frame_id_t frame_id = client_table_[cache_key];
+                    cache_->RecordAccess(frame_id);
+                    
+                    // 使用writev进行聚集写
+                    struct iovec iov[1];
+                    iov[0].iov_base = (void*)frames_[frame_id]->GetData();
+                    iov[0].iov_len = strlen(frames_[frame_id]->GetData());
+                    
+                    ssize_t total_sent = 0;
+                    while (total_sent < iov[0].iov_len) {
+                        ssize_t sent = writev(client_fd, iov, 1);
+                        if (sent < 0) {
+                            if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                                continue;
+                            }
+                            logger.error("Send error: " + std::string(strerror(errno)));
+                            break;
+                        }
+                        total_sent += sent;
+                        iov[0].iov_base = (char*)iov[0].iov_base + sent;
+                        iov[0].iov_len -= sent;
+                    }
+                    cache_hit = true;
+                }
+            }
+            
+            if (!cache_hit) {
+                // 生成新响应
+                Router router("/home/zbw/www");
+                std::string response = router.route(result.path, client_fd, "");
+                
+                // 更新缓存
+                cacheManage(cache_key, response);
+                
+                // 发送响应
+                ssize_t total_sent = 0;
+                while (total_sent < response.length()) {
+                    ssize_t sent = send(client_fd, response.c_str() + total_sent, 
+                                      response.length() - total_sent, MSG_NOSIGNAL);
+                    if (sent < 0) {
+                        if (errno == EAGAIN || errno == EWOULDBLOCK) {
+                            continue;
+                        }
+                        logger.error("Send error: " + std::string(strerror(errno)));
+                        break;
+                    }
+                    total_sent += sent;
+                }
+            }
+            
+            // 处理keep-alive
+            if (Http::isKeepAlive(std::string(buffer.get()))) {
+                epoll_event event;
+                event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+                event.data.fd = client_fd;
+                if (epoll_ctl(epoll_fd, EPOLL_CTL_MOD, client_fd, &event) < 0) {
+                    logger.error("Failed to modify client in epoll");
+                    close(client_fd);
+                }
+            } else {
+                close(client_fd);
+            }
+            return;
         }
-    }
-
-    buffer[total] = '\0';
-    logger.info("Received request, size: " + std::to_string(total));
-
-    // 解析HTTP请求
-    std::string request(buffer);
-    std::string path;
-    size_t pathStart = request.find("GET ") + 4;
-    if (pathStart != std::string::npos) {
-        size_t pathEnd = request.find(" HTTP", pathStart);
-        if (pathEnd != std::string::npos) {
-            path = request.substr(pathStart, pathEnd - pathStart);
+        
+        if (total_read >= MAX_SIZE) {
+            // 请求太大，发送413错误
+            std::string error_response = Http::buildResponse("Request Entity Too Large", "text/plain", 413);
+            send(client_fd, error_response.c_str(), error_response.length(), MSG_NOSIGNAL);
+            close(client_fd);
+            return;
         }
-    }
-
-    if (path.empty()) {
-        path = "/index.html";  // 默认页面
-    }
-
-    // 检查是否是Keep-Alive连接
-    bool keepAlive = (request.find("Connection: keep-alive") != std::string::npos);
-
-    // 处理请求并缓存响应
-    Router router("/home/zbw/www");
-    std::string response = router.route(path, client_fd, "");
-    cacheManage(client_fd, response);
-    
-    if (!keepAlive) {
-        close(client_fd);
     }
 }
 
 // 处理 epoll 返回的所有事件
 void Server::handleEvents() {
     epoll_event events[MAX_EVENTS];
-    int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
-    if(nfds < 0) {
-        if (errno == EINTR) {
-            return;  // 被信号中断，直接返回
+    
+    while (true) {
+        int nfds = epoll_wait(epoll_fd, events, MAX_EVENTS, -1);
+        if(nfds < 0) {
+            if (errno == EINTR) {
+                continue;  // 被信号中断，继续等待
+            }
+            logger.error("epoll_wait error: " + std::string(strerror(errno)));
+            break;
         }
-        logger.error("epoll_wait error: " + std::string(strerror(errno)));
-        return;
-    }
 
-    for (int i = 0; i < nfds; ++i) {
-        int fd = events[i].data.fd;
-        uint32_t ev = events[i].events;
-        
-        if(fd == socka.getListendFd()) {
-            std::lock_guard<std::mutex> lock(*bpm_latch_);
-            
-            // 接受新连接
-            std::string client_ip;
-            int client_fd = socka.acceptConnection(client_ip);
-            if(client_fd == -1) {
-                if (errno != EAGAIN && errno != EWOULDBLOCK) {
-                    logger.error("accept failed: " + std::string(strerror(errno)));
+        // 批量处理连接请求
+        std::vector<std::function<void()>> batch_tasks;
+        batch_tasks.reserve(nfds);  // 预分配空间
+
+        for (int i = 0; i < nfds; ++i) {
+            int fd = events[i].data.fd;
+            uint32_t ev = events[i].events;
+
+            if (fd == socka.getListendFd()) {
+                // 批量接受新连接
+                for (int j = 0; j < 16; ++j) {  // 每次最多接受16个新连接
+                    std::string client_ip;
+                    int client_fd = socka.acceptConnection(client_ip);
+                    if (client_fd < 0) {
+                        if (errno != EAGAIN && errno != EWOULDBLOCK) {
+                            logger.error("Accept failed: " + std::string(strerror(errno)));
+                        }
+                        break;
+                    }
+                    
+                    epoll_event client_event;
+                    client_event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;
+                    client_event.data.fd = client_fd;
+                    if (epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &client_event) < 0) {
+                        logger.error("Failed to add client to epoll");
+                        close(client_fd);
+                        continue;
+                    }
                 }
-                continue;
-            }
+            } else {
+                if ((ev & EPOLLERR) || (ev & EPOLLHUP)) {
+                    epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
+                    close(fd);
+                    continue;
+                }
 
-            // 设置非阻塞模式
-            int flags = fcntl(client_fd, F_GETFL, 0);
-            if (flags == -1) {
-                logger.error("fcntl F_GETFL failed");
-                close(client_fd);
-                continue;
+                if (ev & EPOLLIN) {
+                    batch_tasks.push_back([this, fd]() {
+                        handleClient(fd);
+                    });
+                }
             }
-            if (fcntl(client_fd, F_SETFL, flags | O_NONBLOCK) == -1) {
-                logger.error("fcntl F_SETFL failed");
-                close(client_fd);
-                continue;
-            }
-            
-            // 设置TCP_NODELAY
-            int optval = 1;
-            if (setsockopt(client_fd, IPPROTO_TCP, TCP_NODELAY, &optval, sizeof(optval)) < 0) {
-                logger.error("setsockopt TCP_NODELAY failed");
-                close(client_fd);
-                continue;
-            }
+        }
 
-            // 设置接收超时
-            struct timeval tv;
-            tv.tv_sec = 5;  // 5秒超时
-            tv.tv_usec = 0;
-            if (setsockopt(client_fd, SOL_SOCKET, SO_RCVTIMEO, &tv, sizeof(tv)) < 0) {
-                logger.error("setsockopt SO_RCVTIMEO failed");
-                close(client_fd);
-                continue;
-            }
-            
-            epoll_event event;
-            event.events = EPOLLIN | EPOLLET | EPOLLONESHOT;  // 使用EPOLLONESHOT防止多线程竞争
-            event.data.fd = client_fd;
-            
-            if(epoll_ctl(epoll_fd, EPOLL_CTL_ADD, client_fd, &event) < 0) {
-                logger.error("epoll_ctl add client failed: " + std::string(strerror(errno)));
-                close(client_fd);
-                continue;
-            }
-            logger.info("Accepted new connection, fd: " + std::to_string(client_fd));
-        } else {
-            if ((ev & EPOLLERR) || (ev & EPOLLHUP)) {
-                logger.error("epoll error on fd " + std::to_string(fd));
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                close(fd);
-                continue;
-            }
-
-            if (ev & EPOLLIN) {
-                // 将fd从epoll中移除，防止重复触发
-                epoll_ctl(epoll_fd, EPOLL_CTL_DEL, fd, nullptr);
-                
-                thread_pool.enqueue([this, fd]() {
-                    handleClient(fd);
-                });
-            }
+        // 批量提交任务到线程池
+        for (auto& task : batch_tasks) {
+            thread_pool.enqueue(std::move(task));
         }
     }
 }
